@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: the-young-creatives-api
+    env: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: the-young-creatives-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: PORT
+        value: 4000
+
+databases:
+  - name: the-young-creatives-db
+    plan: free

@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --color-ink: #14171f;
+  --color-ink-soft: #262b38;
+  --color-paper: #fcfcfd;
+  --color-paper-soft: #f1f3f8;
+
+  --color-blue-50: #eef1ff;
+  --color-blue-100: #dbe1ff;
+  --color-blue-300: #8aa3ff;
+  --color-blue-500: #2f4bff;
+  --color-blue-600: #2439e6;
+  --color-blue-700: #1c2db3;
+  --color-blue-900: #10184d;
+
+  --color-bg: #fcfcfd;
+  --color-surface: #ffffff;
+  --color-border: #e3e6ee;
+  --color-text: #14171f;
+  --color-text-soft: #5a6072;
+
+  --animate-marquee: marquee 28s linear infinite;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.dark {
+  --color-bg: #10131a;
+  --color-surface: #1b2030;
+  --color-border: #2a3040;
+  --color-text: #f4f6fb;
+  --color-text-soft: #a6adbf;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono-label {
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+}
+
+.crop-marks {
+  position: relative;
+}
+.crop-marks::before,
+.crop-marks::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--color-blue-500);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.crop-marks::before {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+}
+.crop-marks::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+}
+
+::selection {
+  background: var(--color-blue-500);
+  color: white;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-blue-500);
+  outline-offset: 2px;
+}
