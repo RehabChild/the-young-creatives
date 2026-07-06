@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import AnimatedSection from '../components/AnimatedSection';
-import { services } from '../data/services';
+import { publicApi, PublicApiError, type ApiService } from '../lib/publicApi';
 
 interface FormState {
   companyName: string;
@@ -28,9 +28,21 @@ const initialState: FormState = {
 const budgetRanges = ['Under $500', '$500 – $1,500', '$1,500 – $4,000', '$4,000 – $10,000', 'Over $10,000'];
 
 export default function Booking() {
+  const [services, setServices] = useState<ApiService[]>([]);
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    publicApi
+      .getServices()
+      .then((res) => setServices(res.services))
+      .catch(() => {
+        // Non-fatal — the form still works, just without a live service list.
+      });
+  }, []);
 
   const update = (field: keyof FormState, value: string) => {
     setForm((f) => ({ ...f, [field]: value }));
@@ -53,12 +65,25 @@ export default function Booking() {
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
     if (!validate()) return;
-    // In production: POST to /api/bookings, stored in PostgreSQL and surfaced in the admin dashboard.
-    setSubmitted(true);
-    setForm(initialState);
+
+    setSubmitting(true);
+    try {
+      await publicApi.submitBooking(form);
+      setSubmitted(true);
+      setForm(initialState);
+    } catch (err) {
+      setSubmitError(
+        err instanceof PublicApiError
+          ? err.message
+          : 'Something went wrong submitting your request. Please try again.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const inputClass = (field: keyof FormState) =>
@@ -208,11 +233,14 @@ export default function Booking() {
                 </div>
               </div>
 
+              {submitError && <p className="text-sm text-red-500">{submitError}</p>}
+
               <button
                 type="submit"
-                className="w-full rounded-full bg-blue-500 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 hover:bg-blue-600 sm:w-auto sm:px-8"
+                disabled={submitting}
+                className="w-full rounded-full bg-blue-500 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 hover:bg-blue-600 disabled:opacity-60 disabled:hover:translate-y-0 sm:w-auto sm:px-8"
               >
-                Submit request
+                {submitting ? 'Submitting…' : 'Submit request'}
               </button>
             </form>
           </AnimatedSection>

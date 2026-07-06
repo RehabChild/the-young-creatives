@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Mail, Phone, MessageCircle, MapPin, CheckCircle2 } from 'lucide-react';
 import AnimatedSection from '../components/AnimatedSection';
+import { publicApi, PublicApiError } from '../lib/publicApi';
 
 interface FormState {
   name: string;
@@ -12,14 +13,17 @@ export default function Contact() {
   const [form, setForm] = useState<FormState>({ name: '', email: '', message: '' });
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const update = (field: keyof FormState, value: string) => {
     setForm((f) => ({ ...f, [field]: value }));
     if (errors[field]) setErrors((e) => ({ ...e, [field]: undefined }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
     const next: Partial<FormState> = {};
     if (!form.name.trim()) next.name = 'Name is required.';
     if (!form.email.trim()) next.email = 'Email is required.';
@@ -27,8 +31,21 @@ export default function Contact() {
     if (!form.message.trim() || form.message.trim().length < 10) next.message = 'Message should be at least 10 characters.';
     setErrors(next);
     if (Object.keys(next).length > 0) return;
-    setSubmitted(true);
-    setForm({ name: '', email: '', message: '' });
+
+    setSubmitting(true);
+    try {
+      await publicApi.submitContactMessage(form);
+      setSubmitted(true);
+      setForm({ name: '', email: '', message: '' });
+    } catch (err) {
+      setSubmitError(
+        err instanceof PublicApiError
+          ? err.message
+          : 'Something went wrong sending your message. Please try again.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const inputClass = (field: keyof FormState) =>
@@ -119,11 +136,15 @@ export default function Contact() {
                   />
                   {errors.message && <p className="mt-1.5 text-xs text-red-500">{errors.message}</p>}
                 </div>
+
+                {submitError && <p className="text-sm text-red-500">{submitError}</p>}
+
                 <button
                   type="submit"
-                  className="w-full rounded-full bg-blue-500 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 hover:bg-blue-600 sm:w-auto sm:px-8"
+                  disabled={submitting}
+                  className="w-full rounded-full bg-blue-500 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 hover:bg-blue-600 disabled:opacity-60 disabled:hover:translate-y-0 sm:w-auto sm:px-8"
                 >
-                  Send message
+                  {submitting ? 'Sending…' : 'Send message'}
                 </button>
               </form>
             )}

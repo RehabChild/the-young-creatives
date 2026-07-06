@@ -1,13 +1,22 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star, Mail, Phone, MessageCircle } from 'lucide-react';
 import AnimatedSection from '../components/AnimatedSection';
 import SectionHeading from '../components/SectionHeading';
-import { services } from '../data/services';
-import { projects } from '../data/portfolio';
-import { testimonials } from '../data/testimonials';
+import { publicApi, type ApiService, type ApiProject, type ApiTestimonial } from '../lib/publicApi';
 
 export default function Home() {
+  const [services, setServices] = useState<ApiService[]>([]);
+  const [projects, setProjects] = useState<ApiProject[]>([]);
+  const [testimonials, setTestimonials] = useState<ApiTestimonial[]>([]);
+
+  useEffect(() => {
+    publicApi.getServices().then((res) => setServices(res.services)).catch(() => {});
+    publicApi.getPortfolio().then((res) => setProjects(res.projects)).catch(() => {});
+    publicApi.getTestimonials().then((res) => setTestimonials(res.testimonials)).catch(() => {});
+  }, []);
+
   return (
     <div>
       {/* Hero */}
@@ -116,7 +125,7 @@ export default function Home() {
             {services.slice(0, 6).map((service, i) => (
               <AnimatedSection key={service.id} delay={i * 0.05}>
                 <div className="group h-full rounded-2xl border border-border bg-surface p-6 transition-colors hover:border-blue-500">
-                  <span className="font-mono-label text-xs text-blue-500">{service.index}</span>
+                  <span className="font-mono-label text-xs text-blue-500">{String(i + 1).padStart(2, '0')}</span>
                   <h3 className="mt-3 font-display text-lg font-semibold text-text">{service.name}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-text-soft">{service.summary}</p>
                 </div>
@@ -169,7 +178,7 @@ export default function Home() {
           </AnimatedSection>
           <div className="mt-10 grid gap-5 md:grid-cols-2">
             {testimonials.slice(0, 2).map((t, i) => (
-              <AnimatedSection key={t.name} delay={i * 0.05}>
+              <AnimatedSection key={t.id} delay={i * 0.05}>
                 <div className="h-full rounded-2xl border border-border bg-surface p-6">
                   <div className="flex gap-1 text-blue-500">
                     {Array.from({ length: t.rating }).map((_, idx) => (

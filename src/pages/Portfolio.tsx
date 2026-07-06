@@ -1,22 +1,37 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, X, ArrowUpRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import AnimatedSection from '../components/AnimatedSection';
-import { projects, type Project } from '../data/portfolio';
+import { publicApi, type ApiProject } from '../lib/publicApi';
 
 export default function Portfolio() {
   const [query, setQuery] = useState('');
-  const [active, setActive] = useState<Project | null>(null);
+  const [projects, setProjects] = useState<ApiProject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [active, setActive] = useState<ApiProject | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return projects;
-    return projects.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.tech.some((t) => t.toLowerCase().includes(q))
-    );
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    const timeout = setTimeout(() => {
+      publicApi
+        .getPortfolio(query.trim() || undefined)
+        .then((res) => {
+          if (!cancelled) setProjects(res.projects);
+        })
+        .catch(() => {
+          if (!cancelled) setError('Could not load the portfolio right now. Please try again shortly.');
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }, 250); // debounce so we're not hitting the API on every keystroke
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
   }, [query]);
 
   return (
@@ -48,40 +63,46 @@ export default function Portfolio() {
           </div>
         </AnimatedSection>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((project, i) => (
-            <AnimatedSection key={project.id} delay={i * 0.04}>
-              <div className="group overflow-hidden rounded-2xl border border-border bg-surface">
-                <div
-                  className="flex h-44 items-center justify-center font-display text-2xl font-semibold text-white/90"
-                  style={{ backgroundColor: project.color }}
-                >
-                  {project.name}
-                </div>
-                <div className="p-5">
-                  <p className="font-mono-label text-xs uppercase text-blue-500">{project.category}</p>
-                  <h3 className="mt-1.5 font-display text-lg font-semibold text-text">{project.name}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-text-soft">{project.description}</p>
-                  <div className="mt-4 flex flex-wrap gap-1.5">
-                    {project.tech.map((t) => (
-                      <span key={t} className="rounded-full bg-paper-soft px-2.5 py-1 text-xs text-text-soft dark:bg-ink-soft">
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => setActive(project)}
-                    className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-blue-500 hover:underline"
-                  >
-                    View details <ArrowUpRight size={14} />
-                  </button>
-                </div>
-              </div>
-            </AnimatedSection>
-          ))}
-        </div>
+        {error && <p className="mt-8 text-sm text-red-500">{error}</p>}
 
-        {filtered.length === 0 && (
+        {loading ? (
+          <p className="mt-10 text-sm text-text-soft">Loading…</p>
+        ) : (
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project, i) => (
+              <AnimatedSection key={project.id} delay={i * 0.04}>
+                <div className="group overflow-hidden rounded-2xl border border-border bg-surface">
+                  <div
+                    className="flex h-44 items-center justify-center font-display text-2xl font-semibold text-white/90"
+                    style={{ backgroundColor: project.color }}
+                  >
+                    {project.name}
+                  </div>
+                  <div className="p-5">
+                    <p className="font-mono-label text-xs uppercase text-blue-500">{project.category}</p>
+                    <h3 className="mt-1.5 font-display text-lg font-semibold text-text">{project.name}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-text-soft">{project.description}</p>
+                    <div className="mt-4 flex flex-wrap gap-1.5">
+                      {project.tech.map((t) => (
+                        <span key={t} className="rounded-full bg-paper-soft px-2.5 py-1 text-xs text-text-soft dark:bg-ink-soft">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setActive(project)}
+                      className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-blue-500 hover:underline"
+                    >
+                      View details <ArrowUpRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              </AnimatedSection>
+            ))}
+          </div>
+        )}
+
+        {!loading && projects.length === 0 && (
           <p className="mt-10 text-center text-sm text-text-soft">No projects match &ldquo;{query}&rdquo;.</p>
         )}
       </div>
